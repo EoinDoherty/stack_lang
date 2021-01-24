@@ -1,9 +1,10 @@
 package runtime
 
 const (
-    END_STR = iota // Null terminator for strings (Does this need to be in the spec?)
+    END_STR = iota // Null terminator for strings
 	PUSH           // Pushes a number onto the stack
 	POP            // Pops a value from the stack
+    POP_STR        // Pops the string at the top of the stack
 	ADD            // Adds first two values on the stack
 	SUB            // Subtracts second stack value from the first
 	DIV            // Divides first stack value by the second

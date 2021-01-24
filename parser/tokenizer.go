@@ -6,6 +6,8 @@ import (
 	"unicode"
 )
 
+var EOF string = string([]byte{0})
+
 func GetTokens(filename string) ([]string, error) {
 
 	file, err := os.Open(filename)
@@ -25,7 +27,7 @@ func readTokens(reader *bufio.Reader) ([]string, error) {
 	for {
 		s, err := readToken(reader)
 
-		if len(s) > 0 {
+		if len(s) > 0 && s != EOF {
 			tokens = append(tokens, s)
 		}
 
@@ -95,7 +97,7 @@ func tokenizeWord(reader *bufio.Reader) (string, error) {
 			return word, err
 		}
 
-		if unicode.IsSpace(r) {
+		if unicode.IsSpace(r) || r == 0 {
 			return word, nil
 		}
 

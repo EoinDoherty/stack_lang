@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"stack_lang/compiler"
 	"stack_lang/parser"
 	"stack_lang/runtime"
 )
@@ -27,4 +28,11 @@ func main() {
 	str := "hello world"
 	runtime.PushString(str, s)
 	runtime.PrintString(s)
+	ops, err := compiler.CompileFile("code.stk")
+
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+	}
+
+	fmt.Printf("%v\n", ops)
 }

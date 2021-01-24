@@ -1,0 +1,28 @@
+push 1
+print
+push "asdf"
+prints
+pop
+pops
+
+push 1
+push 2
+add 
+print # 3
+
+push 3
+sub 
+print # 0
+
+push 10
+mul 
+print # 0
+
+pop
+
+push 4
+push 2
+
+div
+print # 2
+
