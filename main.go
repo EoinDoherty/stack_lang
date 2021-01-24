@@ -28,15 +28,27 @@ func main() {
         }
     }
 
-    runFile := *ifile
+    if *interpret {
 
-    if *interpret && *compile{
-        runFile = *ofile
+        runFile := *ifile
+
+        if *interpret && *compile{
+            runFile = *ofile
+        }
+
+        if len(runFile) == 0 {
+            fmt.Println("Please specify a file to run using the ifile flag")
+            return
+        }
+
+        err := runtime.RunFile(runFile)
+
+        if err != nil {
+            fmt.Printf("Error: %v\n", err)
+        }
     }
 
-    err := runtime.RunFile(runFile)
-
-    if err != nil {
-        fmt.Printf("Error: %v\n", err)
+    if !*compile && !*interpret {
+        fmt.Println("Please specify a mode with the c or i flags")
     }
 }
