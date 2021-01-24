@@ -1,38 +1,42 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"stack_lang/compiler"
-	"stack_lang/parser"
 	"stack_lang/runtime"
 )
 
 func main() {
-	s := &runtime.Stack{}
-	s.Push(1)
-	s.Push(2)
-	fmt.Println(s.Pop())
-	fmt.Println(s.Pop())
-	fmt.Println("hello world")
 
-	tokens, err := parser.GetTokens("file.txt")
+    compile := flag.Bool("c", false, "Compile an executable from a file")
+    ifile := flag.String("infile", "", "Source code file to compile")
+    interpret := flag.Bool("i", false, "Interpret a compiled executable")
+    ofile := flag.String("outfile", "a.out", "Name of executable file; defaults to a.out")
+    flag.Parse()
 
-	for _, thing := range tokens {
-		fmt.Printf("\"%s\"\n", thing)
-	}
-	fmt.Println(tokens)
-	fmt.Println(err)
+    if *compile {
+        if len(*ifile) == 0 {
+            fmt.Println("Please enter a filename with -ifile")
+            return
+        }
 
-	fmt.Println("")
-	fmt.Println("Pushing hello world")
-	str := "hello world"
-	runtime.PushString(str, s)
-	runtime.PrintString(s)
-	ops, err := compiler.CompileFile("code.stk")
+        err := compiler.CompileFile(*ifile, *ofile)
 
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-	}
+        if err != nil {
+            fmt.Printf("Error: %v\n", err)
+        }
+    }
 
-	fmt.Printf("%v\n", ops)
+    runFile := *ifile
+
+    if *interpret && *compile{
+        runFile = *ofile
+    }
+
+    err := runtime.RunFile(runFile)
+
+    if err != nil {
+        fmt.Printf("Error: %v\n", err)
+    }
 }

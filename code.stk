@@ -2,26 +2,27 @@ push 1
 print
 push "asdf"
 prints
-pop
+
 pops
+pop
 
 push 1
 push 2
 add 
 print # 3
 
-push 3
+push 4
 sub 
-print # 0
+print # 1
 
 push 10
 mul 
-print # 0
+print # 10
 
 pop
 
-push 4
 push 2
+push 4
 
 div
 print # 2
