@@ -3,136 +3,117 @@ package compiler
 import (
 	"fmt"
 	"io"
+	"os"
 	"stack_lang/parser"
 	"stack_lang/runtime"
 	"strconv"
 )
 
-func CompileFile(filename string) ([]byte, error) {
-    tokens, err := parser.GetTokens(filename)
-    fmt.Printf("%v\n", tokens)
-    // last := tokens[len(tokens)-1]
-    // fmt.Printf("%v\n", []byte(last))
-    // tokens = tokens[:len(tokens)-1]
-    // fmt.Printf("%v\n", tokens)
+func CompileFile(inputFilename string, outputFilename string) error {
+    tokens, err := parser.GetTokens(inputFilename)
 
     if err != nil && err != io.EOF {
-        return nil, fmt.Errorf("CompileFile error: %v", err)
+        return fmt.Errorf("CompileFile input error: %v", err)
     }
 
-    operations := make([]byte, 0)
-    ops := make([]byte, 0)
+    out, err := os.Create(outputFilename)
+
+    if err != nil {
+        return fmt.Errorf("CompileFile output file error: %v", err)
+    }
+    defer out.Close()
+
+    return compile(tokens, out)
+}
+
+func compile(tokens []string, out io.Writer) error {
+    var err error = nil
 
     for {
-        tokens, ops, err = compileTokens(tokens)
-        if err != nil {
-            return operations, fmt.Errorf("CompileFile: %v", err)
-        }
+        tokens, err = compileTokens(tokens, out)
 
-        operations = append(operations, ops...)
+        if err != nil {
+            return fmt.Errorf("CompileFile: %v", err)
+        }
 
         if len(tokens) == 0 {
             break;
         }
     }
 
-    return operations, nil
+    return nil
 }
 
-func compileTokens(tokens []string) ([]string, []byte, error) {
+func compileTokens(tokens []string, out io.Writer) ([]string, error) {
     if len(tokens) == 0 {
-        return tokens, []byte{}, nil
+        return tokens, nil
     }
 
     first := tokens[0]
-    fmt.Println("Token: " + first)
 
     switch first {
         case "push":
-            return compilePush(tokens[1:])
+            return compilePush(tokens[1:], out)
         case "pop":
-            return compilePop(tokens[1:])
+            return tokens[1:], pushOpCode(runtime.POP, out)
         case "pops":
-            return compilePopStr(tokens[1:])
+            return tokens[1:], pushOpCode(runtime.POP_STR, out)
         case "add":
-            return compileAdd(tokens[1:])
+            return tokens[1:], pushOpCode(runtime.ADD, out)
         case "sub":
-            return compileSub(tokens[1:])
+            return tokens[1:], pushOpCode(runtime.SUB, out)
         case "div":
-            return compileDiv(tokens[1:])
+            return tokens[1:], pushOpCode(runtime.DIV, out)
         case "mul":
-            return compileMul(tokens[1:])
+            return tokens[1:], pushOpCode(runtime.MUL, out)
         case "print":
-            return compilePrintVal(tokens[1:])
+            return tokens[1:], pushOpCode(runtime.PRINT_VAL, out)
         case "prints":
-            return compilePrintStr(tokens[1:])
+            return tokens[1:], pushOpCode(runtime.PRINT_STR, out)
         default:
-            return tokens, []byte{}, fmt.Errorf("compileTokens: Unrecognized token: " + first)
+            return tokens, fmt.Errorf("compileTokens: Unrecognized token: " + first)
     }
 }
 
-func compilePop(tokens []string) ([]string, []byte, error) {
-    return tokens, []byte{runtime.POP}, nil
-}
-
-func compilePush(tokens []string) ([]string, []byte, error) {
+func compilePush(tokens []string, out io.Writer) ([]string, error) {
     if len(tokens) == 0 {
-        return tokens, []byte{}, fmt.Errorf("Argument not specified for push")
+        return tokens, fmt.Errorf("Argument not specified for push")
     }
 
     if isString(tokens[0]) {
-        return compilePushStr(tokens)
+        return compilePushStr(tokens, out)
     }
 
     int8Rep, err := strconv.ParseUint(tokens[0], 10, 8)
 
-    newOps := []byte{runtime.PUSH, byte(int8Rep)}
-
-    return tokens[1:], newOps, err
-}
-
-func compilePopStr(tokens []string) ([]string, []byte, error) {
-    return tokens, []byte{runtime.POP_STR}, nil
-}
-
-func compilePushStr(tokens []string) ([]string, []byte, error) {
-    newOps := make([]byte, 1)
-
-    newOps[0] = runtime.PUSH
-
-    strBytes := []byte(unquoteString(tokens[0]))
-
-    for _,b := range strBytes {
-        newOps = append(newOps, b)
+    if err != nil {
+        return tokens[1:], err
     }
 
-    newOps = append(newOps, runtime.END_STR)
+    _, err = out.Write([]byte{runtime.PUSH, byte(int8Rep)})
 
-    return tokens[1:], newOps, nil
+    return tokens[1:], err
 }
 
-func compileAdd(tokens []string) ([]string, []byte, error) {
-    return tokens, []byte{runtime.ADD}, nil
+func compilePushStr(tokens []string, out io.Writer) ([]string, error) {
+    strBytes := []byte(unquoteString(tokens[0]))
+    strBytes = append(strBytes, runtime.END_STR)
+
+    for i := len(strBytes) - 1; i >= 0; i-- {
+    // for _,b := range strBytes {
+        _, err := out.Write([]byte{runtime.PUSH, strBytes[i]})
+
+        if err != nil {
+            return tokens, err
+        }
+    }
+
+    return tokens[1:], nil
 }
 
-func compileSub(tokens []string) ([]string, []byte, error) {
-    return tokens, []byte{runtime.SUB}, nil
-}
-
-func compileDiv(tokens []string) ([]string, []byte, error) {
-    return tokens, []byte{runtime.DIV}, nil
-}
-
-func compileMul(tokens []string) ([]string, []byte, error) {
-    return tokens, []byte{runtime.MUL}, nil
-}
-
-func compilePrintStr(tokens []string) ([]string, []byte, error) {
-    return tokens, []byte{runtime.PRINT_STR}, nil
-}
-
-func compilePrintVal(tokens []string) ([]string, []byte, error) {
-    return tokens, []byte{runtime.PRINT_VAL}, nil
+func pushOpCode(code byte, out io.Writer) error {
+    _, err := out.Write([]byte{code})
+    return err
 }
 
 func isString(token string) bool {

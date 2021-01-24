@@ -9,12 +9,13 @@ import (
 var EOF string = string([]byte{0})
 
 func GetTokens(filename string) ([]string, error) {
-
 	file, err := os.Open(filename)
 
 	if err != nil {
 		return nil, err
 	}
+
+    defer file.Close()
 
 	reader := bufio.NewReader(file)
 
